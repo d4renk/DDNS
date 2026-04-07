@@ -184,6 +184,7 @@ ddns -c https://ddns.newfuture.cc/tests/config/debug.json
 | index4 | string\|int\|array |    No    | `"default"` |   ipv4 获取方式    | 可设置 `网卡`、`内网`、`公网`、`正则` 等方式                                                                                                                                             |
 | index6 | string\|int\|array |    No    | `"default"` |   ipv6 获取方式    | 可设置 `网卡`、`内网`、`公网`、`正则` 等方式                                                                                                                                             |
 |  ttl   |       number       |    No    |   `null`    | DNS 解析 TTL 时间  | 不设置采用 DNS 默认策略                                                                                                                                                                  |
+| extra  |       object       |    No    |     无      |    自定义扩展字段    | 可通过 `extra.zone` 配置完整记录名到 zone 的精确映射                                                                                                                                      |
 | proxy  |   string\|array    |    No    |     无      | HTTP 代理格式：`http://host:port` | 多代理逐个尝试直到成功，`DIRECT` 为直连                                                                                                                                                  |
 |  ssl   |  string\|boolean   |    No    |  `"auto"`   | SSL证书验证方式    | `true`（强制验证）、`false`（禁用验证）、`"auto"`（自动降级）或自定义CA证书文件路径                                                                                    |
 | debug  |        bool        |    No    |   `false`   |    是否开启调试    | 调试模式，仅命令行参数`--debug`有效                                                                                                                                    |
@@ -204,6 +205,33 @@ ddns -c https://ddns.newfuture.cc/tests/config/debug.json
 - `false`：强制禁止更新 ipv4 或 ipv6 的 DNS 解析
 - 列表：依次执行列表中的 index 规则，并将最先获得的结果作为目标 IP
   - 例如 `["public", "regex:172\\..*"]` 将先查询公网 API，未获取到 IP 后再从本地寻找 172 开头的 IP
+
+#### extra.zone 记录名到 zone 的精确映射
+
+`extra.zone` 可用于按完整记录名显式指定 zone。命中映射时优先使用配置的 zone，未命中时继续使用当前自动解析逻辑。
+
+- key 为完整记录名
+- value 为对应的 zone
+- `"*.b.com"` 按字面量泛解析记录名处理，不表示本地通配匹配规则
+
+环境变量示例：
+
+```bash
+DDNS_EXTRA_ZONE='{"www.a.com":"a.com","*.b.com":"b.com"}'
+```
+
+JSON 示例：
+
+```json
+{
+  "extra": {
+    "zone": {
+      "www.a.com": "a.com",
+      "*.b.com": "b.com"
+    }
+  }
+}
+```
 
 #### 自定义回调配置说明
 
@@ -233,6 +261,12 @@ ddns -c https://ddns.newfuture.cc/tests/config/debug.json
   "index4": 0,
   "index6": "public",
   "ttl": 600,
+  "extra": {
+    "zone": {
+      "www.a.com": "a.com",
+      "*.b.com": "b.com"
+    }
+  },
   "proxy": ["http://127.0.0.1:1080", "DIRECT"],
   "log": {
     "level": "DEBUG",

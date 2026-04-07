@@ -181,6 +181,7 @@ ddns -c https://ddns.newfuture.cc/tests/config/debug.json
 | index4 | string\|int\|array |    No    | `"default"` |   IPv4 Get Method  | Can set `network interface`, `private`, `public`, `regex` etc.                                                                                                                          |
 | index6 | string\|int\|array |    No    | `"default"` |   IPv6 Get Method  | Can set `network interface`, `private`, `public`, `regex` etc.                                                                                                                          |
 |  ttl   |       number       |    No    |   `null`    | DNS Resolution TTL | Uses DNS default policy when not set                                                                                                                                                    |
+| extra  |       object       |    No    |     N/A     | Custom extra fields | `extra.zone` can be used to configure exact mappings from full record names to zones                                                                                                   |
 | proxy  |   string\|array    |    No    |     N/A     | HTTP Proxy Format: `http://host:port` | Multiple proxies tried sequentially until success, `DIRECT` for direct connection                                                                                                      |
 |  ssl   |  string\|boolean   |    No    |  `"auto"`   | SSL Certificate Verification | `true` (force verify), `false` (disable verify), `"auto"` (auto downgrade) or custom CA certificate file path                                                                         |
 | debug  |        bool        |    No    |   `false`   |    Enable Debug    | Debug mode, only effective with command line parameter `--debug`                                                                                                                       |
@@ -201,6 +202,33 @@ ddns -c https://ddns.newfuture.cc/tests/config/debug.json
 - `false`: Force disable IPv4 or IPv6 DNS resolution updates
 - List: Execute index rules in the list sequentially, using the first successful result as target IP
   - For example, `["public", "regex:172\\..*"]` will first query public API, then look for local IPs starting with 172 if no IP is obtained
+
+#### extra.zone exact mapping from record name to zone
+
+`extra.zone` can be used to explicitly assign a zone to a full record name. When a mapping is found, DDNS uses the configured zone first; when no mapping is found, the current automatic logic is preserved.
+
+- The key is the full record name
+- The value is the target zone
+- `"*.b.com"` is treated as the literal wildcard record name, not as a local wildcard matching rule
+
+Environment variable example:
+
+```bash
+DDNS_EXTRA_ZONE='{"www.a.com":"a.com","*.b.com":"b.com"}'
+```
+
+JSON example:
+
+```json
+{
+  "extra": {
+    "zone": {
+      "www.a.com": "a.com",
+      "*.b.com": "b.com"
+    }
+  }
+}
+```
 
 #### Custom Callback Configuration
 
@@ -230,6 +258,12 @@ For detailed configuration guide, see: [Callback Provider Configuration](docs/en
   "index4": 0,
   "index6": "public",
   "ttl": 600,
+  "extra": {
+    "zone": {
+      "www.a.com": "a.com",
+      "*.b.com": "b.com"
+    }
+  },
   "proxy": ["http://127.0.0.1:1080", "DIRECT"],
   "log": {
     "level": "DEBUG",
