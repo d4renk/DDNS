@@ -37,10 +37,35 @@ Return to [All Providers](/en/providers/) to see more options
 | index6 | IPv6 source | Array | [Reference](../config/json.md#ipv4-ipv6) | `default` | Common Config |
 | ipv4 | IPv4 domains | Array | Domain list | None | Common Config |
 | ipv6 | IPv6 domains | Array | Domain list | None | Common Config |
+| extra | Extra configuration | Object | Custom fields such as `zone` | None | Common Config |
 | proxy | Proxy settings | Array | [Reference](../config/json.md#proxy) | None | Common Network |
 | ssl | SSL verification | Boolean/String | `"auto"`, `true`, `false` | `auto` | Common Network |
 | cache | Cache settings | Boolean/String | `true`, `false`, `filepath` | `true` | Common Config |
 | log | Log configuration | Object | [Reference](../config/json.md#log) | None | Common Config |
+
+### extra.zone
+
+`extra.zone` can be used to explicitly assign a zone to a full record name, and Callback Provider supports it as well.
+
+- When a mapping is found, DDNS uses the zone specified in `extra.zone` first
+- When no mapping is found, DDNS continues to use the current default automatic zone resolution logic
+- `"*.b.com"` is treated as the literal wildcard record name, not as a local wildcard matching rule
+
+Configuration example:
+
+```jsonc
+{
+    "dns": "callback",
+    "id": "https://api.example.com/ddns?domain=__DOMAIN__&ip=__IP__",
+    "ipv4": ["www.a.com", "*.b.com"],
+    "extra": {
+        "zone": {
+            "www.a.com": "a.com",
+            "*.b.com": "b.com"
+        }
+    }
+}
+```
 
 ## Request Methods
 
