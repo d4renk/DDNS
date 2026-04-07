@@ -24,6 +24,7 @@ All environment variables use the `DDNS_` prefix followed by the parameter name 
 | `DDNS_INDEX6`            | Number, `default`, `public`, `url:`, `regex:`, `cmd:`, `shell:`, or an array of them                | IPv6 address detection methods            | `DDNS_INDEX6=public`                                        |
 | `DDNS_TTL`               | Integer (seconds), varies by provider                                                                | DNS record TTL                            | `DDNS_TTL=600`                                              |
 | `DDNS_LINE`              | ISP line such as: 电信, 联通, 移动, or provider-specific values                                     | DNS resolution line                       | `DDNS_LINE=电信`                                            |
+| `DDNS_EXTRA_ZONE`        | JSON object string, with full record name as key and zone as value                                  | Exact mapping from record name to zone    | `DDNS_EXTRA_ZONE='{"www.a.com":"a.com","*.b.com":"b.com"}'` |
 | `DDNS_PROXY`             | `http://host:port` or `DIRECT`, multiple values separated by semicolons                             | HTTP proxy settings                       | `DDNS_PROXY="http://127.0.0.1:1080;DIRECT"`                 |
 | `DDNS_CACHE`             | `true`, `false`, or file path                                                                        | Enable or specify cache file              | `DDNS_CACHE="/tmp/cache"`                                   |
 | `DDNS_SSL`               | `true`, `false`, `auto`, or file path                                                                | SSL verification mode or certificate path | `DDNS_SSL=false`<br>`DDNS_SSL=/path/ca.crt`                 |
@@ -195,6 +196,19 @@ export DDNS_TOKEN='{"api_key": "your_key", "domain": "__DOMAIN__", "ip": "__IP__
   
   # Single domain
   export DDNS_IPV4="example.com"
+  ```
+
+#### DDNS_EXTRA_ZONE
+
+- **Type**: JSON object string
+- **Required**: No
+- **Default**: Not set
+- **Description**: Explicitly map a full record name to a zone. When a mapping is found, DDNS uses that zone first; when no mapping is found, the current automatic logic is preserved.
+- **Special Note**: `*.b.com` is treated as the literal wildcard record name, not as a local wildcard matching rule.
+- **Examples**:
+
+  ```bash
+  export DDNS_EXTRA_ZONE='{"www.a.com":"a.com","*.b.com":"b.com"}'
   ```
 
 ### IPv6 Domain List

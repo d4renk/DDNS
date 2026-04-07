@@ -6,7 +6,7 @@ BaseProvider 单元测试
 """
 
 from base_test import BaseProviderTestCase, unittest
-from ddns.provider._base import BaseProvider, encode_params
+from ddns.provider._base import BaseProvider, encode_params, _normalize_zone_mapping, _split_domain_by_zone
 
 
 class _TestProvider(BaseProvider):
@@ -179,6 +179,17 @@ class TestBaseProvider(BaseProviderTestCase):
         result = encode_params(None)
         self.assertEqual(result, "")
 
+    def test_normalize_zone_mapping_json_string(self):
+        """测试字符串形式的 zone 映射对象解析"""
+        result = _normalize_zone_mapping('{"WWW.A.COM":"A.COM","*.B.COM":"B.COM"}')
+        self.assertEqual(result, {"www.a.com": "a.com", "*.b.com": "b.com"})
+
+    def test_split_domain_by_zone_wildcard(self):
+        """测试字面量泛解析记录按指定主域拆分"""
+        sub, main = _split_domain_by_zone("*.b.com", "b.com")
+        self.assertEqual(sub, "*")
+        self.assertEqual(main, "b.com")
+
     def test_mask_sensitive_data_empty(self):
         """测试空数据打码"""
         result = self.provider._mask_sensitive_data("")
@@ -218,6 +229,36 @@ class TestBaseProvider(BaseProviderTestCase):
     def test_set_record_invalid_domain(self):
         """测试无效域名"""
         result = self.provider.set_record("invalid.notfound", "1.2.3.4", "A")
+        self.assertFalse(result)
+
+    def test_set_record_with_exact_zone_mapping(self):
+        """测试精确记录名映射指定 zone"""
+        result = self.provider.set_record("www.test.com", "1.2.3.4", "A", zone={"www.test.com": "test.com"})
+        self.assertTrue(result)
+        record = self.provider._query_record("zone456", "www", "test.com", "A", None, {})
+        self.assertIsNotNone(record)
+        if record:
+            self.assertEqual(record["value"], "1.2.3.4")
+
+    def test_set_record_with_zone_mapping_string(self):
+        """测试字符串形式的 zone 映射可直接用于 set_record"""
+        result = self.provider.set_record("www.test.com", "1.2.3.4", "A", zone='{"www.test.com":"test.com"}')
+        self.assertTrue(result)
+        record = self.provider._query_record("zone456", "www", "test.com", "A", None, {})
+        self.assertIsNotNone(record)
+
+    def test_set_record_with_wildcard_literal_zone_mapping(self):
+        """测试字面量泛解析记录名的 zone 映射"""
+        result = self.provider.set_record("*.test.com", "1.2.3.4", "A", zone={"*.test.com": "test.com"})
+        self.assertTrue(result)
+        record = self.provider._query_record("zone456", "*", "test.com", "A", None, {})
+        self.assertIsNotNone(record)
+        if record:
+            self.assertEqual(record["name"], "*")
+
+    def test_set_record_zone_mapping_invalid_suffix(self):
+        """测试非法 zone 映射后缀会失败"""
+        result = self.provider.set_record("www.test.com", "1.2.3.4", "A", zone={"www.test.com": "example.com"})
         self.assertFalse(result)
 
 

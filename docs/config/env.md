@@ -24,6 +24,7 @@ DDNS 支持通过环境变量进行配置，环境变量的优先级为：**[命
 | `DDNS_INDEX6`          | 数字、default、public、url:、regex:、cmd:、shell:，可为数组                                        | IPv6 获取方式                     | `DDNS_INDEX6=public`                                     |
 | `DDNS_TTL`             | 整数（单位：秒），依服务商而定                                                                     | 设置 DNS TTL                      | `DDNS_TTL=600`                                           |
 | `DDNS_LINE`            | 依服务商而定，如：电信、移动                                                                        | DNS 解析线路                      | `DDNS_LINE=电信`                                         |
+| `DDNS_EXTRA_ZONE`      | JSON 对象字符串，key 为完整记录名，value 为 zone                                                    | 指定记录名到 zone 的精确映射      | `DDNS_EXTRA_ZONE='{"www.a.com":"a.com","*.b.com":"b.com"}'` |
 | `DDNS_PROXY`           | `http://host:port` 或 DIRECT，支持多代理数组或分号分隔                                              | HTTP 代理设置                     | `DDNS_PROXY="http://127.0.0.1:1080;DIRECT"`              |
 | `DDNS_CACHE`           | true、false 或文件路径                                                                              | 启用缓存或指定缓存文件路径        | `DDNS_CACHE="/tmp/cache"`                                |
 | `DDNS_SSL`             | true、false、auto 或文件路径                                                                         | 设置 SSL 验证方式或指定证书路径   | `DDNS_SSL=false`<br>`DDNS_SSL=/path/ca.crt`              |
@@ -127,6 +128,19 @@ DDNS 支持通过环境变量进行配置，环境变量的优先级为：**[命
   
   # 禁用 IPv4 更新
   export DDNS_IPV4="[]"
+  ```
+
+#### DDNS_EXTRA_ZONE
+
+- **类型**: JSON 对象字符串
+- **必需**: 否
+- **默认值**: 不设置
+- **说明**: 按完整记录名精确指定 zone。命中映射时优先使用指定 zone，未命中时继续使用当前自动解析逻辑。
+- **特殊说明**: `*.b.com` 按字面量泛解析记录名处理，不表示本地通配匹配规则。
+- **示例**:
+
+  ```bash
+  export DDNS_EXTRA_ZONE='{"www.a.com":"a.com","*.b.com":"b.com"}'
   ```
 
 ## IP 获取方式

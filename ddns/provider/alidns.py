@@ -67,6 +67,11 @@ class AliBaseProvider(BaseProvider):
 class AlidnsProvider(AliBaseProvider):
     """阿里云DNS Provider"""
 
+    def _get_zone_id_for_main(self, domain, main):
+        # type: (str, str) -> str | None
+        """阿里云接口直接使用主域名作为 zone_id"""
+        return main
+
     def _split_zone_and_sub(self, domain):
         # type: (str) -> tuple[str | None, str | None, str]
         """

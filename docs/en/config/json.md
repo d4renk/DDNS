@@ -66,6 +66,7 @@ Configuration Parameters Table
 | index6 | string\|int\|array | No | `["default"]` | IPv6 Retrieval Method | [See details below](#index4-index6) |
 | ttl | number | No | `null` | DNS TTL Time | In seconds, uses DNS default policy when not set |
 | line | string | No | `null` | DNS Resolution Line | ISP line selection, supported values depend on DNS provider |
+| extra | object | No | None | Custom extra fields | `extra.zone` can be used to configure exact record-name-to-zone mappings |
 | proxy | string\|array | No | None | HTTP Proxy | Try multiple proxies sequentially until success, supports `DIRECT`(direct), `SYSTEM`(system proxy) |
 | ssl | string\|boolean | No | `"auto"` | SSL Verification Method | `true` (force verification), `false` (disable verification), `"auto"` (auto downgrade) or custom CA certificate file path |
 | cache | string\|bool | No | `true` | Enable Record Caching | Enable to avoid frequent updates, default location is `ddns.{hash}.cache` in temp directory, or specify custom path |
@@ -137,6 +138,29 @@ The specific value range and default value depend on the selected DNS provider.
 ### line
 
 The `line` parameter is used to specify DNS resolution lines. Supported values depend on the selected DNS provider.
+
+### extra.zone
+
+`extra.zone` is used to explicitly map a full record name to a zone. When a mapping is found, DDNS uses that zone first; when no mapping is found, the current automatic logic is preserved.
+
+Configuration example:
+
+```jsonc
+{
+  "extra": {
+    "zone": {
+      "www.a.com": "a.com",
+      "*.b.com": "b.com"
+    }
+  }
+}
+```
+
+Notes:
+
+* The key is the full record name
+* The value is the target zone
+* `"*.b.com"` is treated as the literal wildcard record name, not as a local wildcard matching rule
 
 ### proxy
 

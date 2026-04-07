@@ -61,6 +61,7 @@ DDNS配置文件遵循JSON模式(Schema)，推荐在配置文件中添加`$schem
 | index6   | string\|int\|array |  否  | `["default"]` |   IPv6获取方式    | [详见下方说明](#index4-index6)|
 |  ttl     |       number       |  否  |   `null`    | DNS TTL时间     | 单位为秒，不设置则采用DNS默认策略|
 |  line    |       string       |  否  |   `null`    | DNS解析线路       | ISP线路选择，支持的值视DNS服务商而定 |
+|  extra   |       object       |  否  |     无      | 自定义扩展字段    | 可通过 `extra.zone` 配置完整记录名到 zone 的精确映射 |
 |  proxy   | string\|array      |  否  |     无      | HTTP代理          | 多代理逐个尝试直到成功，支持`DIRECT`(直连)、`SYSTEM`(系统代理)                                              |
 |   ssl    | string\|boolean    |  否  |  `"auto"`   | SSL验证方式    | `true`（强制验证）、`false`（禁用验证）、`"auto"`（自动降级）或自定义CA证书文件路径                          |
 |  cache   |    string\|bool    |  否  |   `true`    | 是否缓存记录       | 正常情况打开避免频繁更新，默认位置为临时目录下`ddns.{hash}.cache`，也可以指定具体路径                              |
@@ -132,6 +133,29 @@ DDNS配置文件遵循JSON模式(Schema)，推荐在配置文件中添加`$schem
 ### line
 
 `line`参数用于指定DNS解析线路，支持的值取决于所选的DNS服务商。
+
+### extra.zone
+
+`extra.zone` 用于按完整记录名精确指定 zone。命中映射时优先使用该 zone，未命中时继续使用当前自动解析逻辑。
+
+配置示例：
+
+```jsonc
+{
+  "extra": {
+    "zone": {
+      "www.a.com": "a.com",
+      "*.b.com": "b.com"
+    }
+  }
+}
+```
+
+说明：
+
+* key 是完整记录名
+* value 是对应的 zone
+* `"*.b.com"` 按字面量泛解析记录名处理，不表示本地通配匹配规则
 
 ### proxy
 

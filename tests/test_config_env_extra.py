@@ -133,6 +133,13 @@ class TestEnvExtraFields(unittest.TestCase):
         config = load_config()
         self.assertEqual(config.get("extra_tags"), ["tag1", "tag2", "tag3"])
 
+    def test_env_extra_zone_object_string(self):
+        """Test DDNS_EXTRA_ZONE preserves object string for later parsing"""
+        os.environ["DDNS_EXTRA_ZONE"] = '{"www.a.com":"a.com","*.b.com":"b.com"}'
+
+        config = load_config()
+        self.assertEqual(config.get("extra_zone"), '{"www.a.com":"a.com","*.b.com":"b.com"}')
+
     def test_env_extra_special_characters(self):
         """Test DDNS_EXTRA_XXX with special characters"""
         os.environ["DDNS_EXTRA_URL"] = "https://example.com/path?key=value&foo=bar"

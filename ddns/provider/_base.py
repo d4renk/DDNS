@@ -56,6 +56,7 @@ Defines a unified interface to support extension and adaptation across providers
 """
 
 from abc import ABCMeta, abstractmethod
+from ast import literal_eval
 from json import loads as jsondecode, dumps as jsonencode
 from logging import Logger, getLogger  # noqa:F401 # type: ignore[no-redef]
 from ..util.http import request, quote, urlencode
@@ -80,6 +81,65 @@ def encode_params(params):
         return params  # type: ignore[return-value]
     items = params.items() if isinstance(params, dict) else params
     return urlencode(sorted(items), doseq=True)
+
+
+def _decode_object_string(value):
+    # type: (str | bytes) -> dict
+    """解析字符串对象，支持 JSON 和 Python 字面量格式"""
+    try:
+        data = jsondecode(value)
+    except Exception:
+        data = literal_eval(value)
+    if not isinstance(data, dict):
+        raise ValueError("zone mapping must be an object")
+    return data
+
+
+def _normalize_zone_mapping(zone_mapping):
+    # type: (dict | str | bytes | None) -> dict[str, str]
+    """标准化 zone 映射配置，返回完整记录名到主域名的映射"""
+    if not zone_mapping:
+        return {}
+
+    if isinstance(zone_mapping, dict):
+        data = zone_mapping
+    elif isinstance(zone_mapping, (str, bytes)):
+        data = _decode_object_string(zone_mapping)
+    else:
+        raise ValueError("zone mapping must be a dict or object string")
+
+    result = {}  # type: dict[str, str]
+    for key, value in data.items():
+        if not hasattr(key, "strip") or not hasattr(value, "strip"):
+            raise ValueError("zone mapping keys and values must be strings")
+
+        domain = key.strip().strip(".").lower()
+        zone = value.strip().strip(".").lower()
+        if not domain or not zone:
+            raise ValueError("zone mapping keys and values cannot be empty")
+
+        result[domain] = zone
+    return result
+
+
+def _split_domain_by_zone(domain, main):
+    # type: (str, str) -> tuple[str, str]
+    """根据指定主域拆分完整记录名，返回(sub, main)"""
+    domain = domain.strip().strip(".").lower()
+    main = main.strip().strip(".").lower()
+    if not domain or not main:
+        raise ValueError("domain and zone cannot be empty")
+    if domain == main:
+        return "@", main
+
+    suffix = "." + main
+    if not domain.endswith(suffix):
+        raise ValueError("zone `{}` is not a suffix of domain `{}`".format(main, domain))
+
+    sub = domain[: -len(suffix)].strip(".")
+    if not sub:
+        return "@", main
+    return sub, main
 
 
 class SimpleProvider(object):
@@ -338,15 +398,26 @@ class BaseProvider(SimpleProvider):
             bool: 执行结果
         """
         domain = domain.lower()
-        self.logger.info("%s => %s(%s)", domain, value, record_type)
-        sub, main = _split_custom_domain(domain)
+        original_domain = domain
+        custom_sub, custom_main = _split_custom_domain(domain)
+        lookup_domain = join_domain(custom_sub, custom_main) if custom_sub is not None else domain
+        self.logger.info("%s => %s(%s)", lookup_domain, value, record_type)
         try:
-            if sub is not None:
+            zone_mapping = _normalize_zone_mapping(extra.get("zone"))
+            if lookup_domain in zone_mapping:
+                main = zone_mapping[lookup_domain]
+                sub, main = _split_domain_by_zone(lookup_domain, main)
+                zone_id = self._get_zone_id_for_main(lookup_domain, main)
+                domain = lookup_domain
+            elif custom_sub is not None:
                 # 使用自定义分隔符格式
-                zone_id = self.get_zone_id(main)
+                sub, main = custom_sub, custom_main
+                zone_id = self._get_zone_id_for_main(lookup_domain, main)
+                domain = lookup_domain
             else:
                 # 自动分析域名
-                zone_id, sub, main = self._split_zone_and_sub(domain)
+                zone_id, sub, main = self._split_zone_and_sub(lookup_domain)
+                domain = lookup_domain
 
             self.logger.info("sub: %s, main: %s(id=%s)", sub, main, zone_id)
             if not zone_id or sub is None:
@@ -364,8 +435,13 @@ class BaseProvider(SimpleProvider):
                 self.logger.warning("No existing record found, creating new one")
                 return self._create_record(zone_id, sub, main, value, record_type, ttl=ttl, line=line, extra=extra)
         except Exception as e:
-            self.logger.exception("Error setting record for %s: %s", domain, e)
+            self.logger.exception("Error setting record for %s: %s", original_domain, e)
             return False
+
+    def _get_zone_id_for_main(self, domain, main):
+        # type: (str, str) -> str | None
+        """根据主域获取 zone_id，供自定义主域和显式 zone 映射复用"""
+        return self.get_zone_id(main)
 
     def get_zone_id(self, domain):
         # type: (str) -> str | None

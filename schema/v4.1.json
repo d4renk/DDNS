@@ -229,7 +229,11 @@
             "examples": [
               {
                 "proxied": true,
-                "comment": "Managed by DDNS"
+                "comment": "Managed by DDNS",
+                "zone": {
+                  "www.a.com": "a.com",
+                  "*.b.com": "b.com"
+                }
               }
             ]
           }
@@ -559,7 +563,11 @@
         {
           "proxied": true,
           "comment": "Managed by DDNS",
-          "tags": ["production", "ddns"]
+          "tags": ["production", "ddns"],
+          "zone": {
+            "www.a.com": "a.com",
+            "*.b.com": "b.com"
+          }
         }
       ]
     }

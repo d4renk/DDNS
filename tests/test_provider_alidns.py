@@ -240,6 +240,27 @@ class TestAlidnsProvider(BaseProviderTestCase):
             )
             self.assertTrue(result)
 
+    def test_set_record_with_extra_zone_mapping(self):
+        """Test set_record uses explicit extra zone mapping without querying main domain"""
+        provider = AlidnsProvider(self.id, self.token)
+
+        with patch.object(provider, "_request") as mock_request:
+            mock_request.side_effect = [
+                {"DomainRecords": {"Record": []}},
+                {"RecordId": "123456"},
+            ]
+
+            result = provider.set_record("*.example.com", "1.2.3.4", "A", zone={"*.example.com": "example.com"})
+
+            self.assertTrue(result)
+            self.assertEqual(mock_request.call_count, 2)
+            self.assertEqual(mock_request.call_args_list[0][0][0], "DescribeSubDomainRecords")
+            self.assertEqual(mock_request.call_args_list[0][1]["SubDomain"], "*.example.com")
+            self.assertEqual(mock_request.call_args_list[0][1]["DomainName"], "example.com")
+            self.assertEqual(mock_request.call_args_list[1][0][0], "AddDomainRecord")
+            self.assertEqual(mock_request.call_args_list[1][1]["RR"], "*")
+            self.assertEqual(mock_request.call_args_list[1][1]["DomainName"], "example.com")
+
     def test_update_record_success(self):
         """Test _update_record method with successful update"""
         provider = AlidnsProvider(self.id, self.token)
